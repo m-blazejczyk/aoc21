@@ -1,15 +1,22 @@
 defmodule Day02 do
-  @spec get_data :: [{String.t(), integer()}]
-  def get_data() do
+  @spec get_raw_data(boolean()) :: [String.t()]
+  defp get_raw_data(_test_data = true) do
+    ["forward 5", "down 5", "forward 8", "up 3", "down 8", "forward 2"]
+  end
+  defp get_raw_data(_test_data = false) do
     Tools.read_file("day02.txt")
-    # ["forward 5", "down 5", "forward 8", "up 3", "down 8", "forward 2"]
+  end
+
+  @spec get_data(boolean()) :: [{String.t(), integer()}]
+  def get_data(test_data) do
+    get_raw_data(test_data)
     |> Enum.map(&String.split/1)
     |> Enum.map(fn [instruction, value_str] -> {instruction, String.to_integer(value_str)} end)
   end
 
-  @spec part1 :: number()
-  def part1() do
-    get_data()
+  @spec part1(boolean()) :: number()
+  def part1(test_data) do
+    get_data(test_data)
     |> Enum.reduce({0, 0}, &process_row_for_part1/2)
     |> Kernel.then(fn {depth, distance} -> depth * distance end)
   end
@@ -19,9 +26,9 @@ defmodule Day02 do
   defp process_row_for_part1({"up", value},      {depth, distance}), do: {depth - value, distance}
   defp process_row_for_part1({"down", value},    {depth, distance}), do: {depth + value, distance}
 
-  @spec part2 :: number()
-  def part2() do
-    get_data()
+  @spec part2(boolean()) :: number()
+  def part2(test_data) do
+    get_data(test_data)
     |> Enum.reduce({0, 0, 0}, &process_row_for_part2/2)
     |> Kernel.then(fn {depth, distance, _aim} -> depth * distance end)
   end
