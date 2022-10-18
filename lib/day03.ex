@@ -45,7 +45,27 @@ defmodule Day03 do
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
-    get_data(test_data)
-    0
+    d = get_data(test_data)
+    |> Enum.map(fn row -> String.to_charlist(row) end)
+
+    oxygen_generator_rating_bin = part2_step(d, [])
+  end
+
+  defp part2_step(d, history) when length(d) == 1 do
+    [hd(d) | history]
+    |> Enum.reverse()
+    |> List.to_string()
+  end
+  defp part2_step(d, history) do
+    IO.inspect(d)
+    threshold = length(d) / 2  # if the length is 7, this will be 3.5
+    one_count = d |> Enum.count(fn [first | _] -> first == ?1 end)
+    more_ones = one_count >= threshold
+    leave = if more_ones, do: ?1, else: ?0
+    IO.puts("We leave items with #{List.to_string([leave])} at the beginning\n")
+    part2_step(d
+      |> Enum.filter(fn [first | _] -> first == leave end)
+      |> Enum.map(fn [_ | rest] -> rest end),
+      [leave | history])
   end
 end
