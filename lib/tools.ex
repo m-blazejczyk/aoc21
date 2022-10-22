@@ -22,4 +22,17 @@ defmodule Tools do
   defp reduce2([elem1 | rest1], [elem2 | rest2], acc, fun) do
     reduce2(rest1, rest2, [fun.(elem1, elem2) | acc], fun)
   end
+
+  @spec reduce_index([any()], any(), function()) :: any()
+  def reduce_index(l, acc, fun) do
+    reduce_index_impl(l, 0, acc, fun)
+  end
+
+  @spec reduce_index_impl([any()], integer(), any(), function()) :: any()
+  defp reduce_index_impl([], _index, acc, _fun) do
+    acc
+  end
+  defp reduce_index_impl([head | rest], index, acc, fun) do
+    reduce_index_impl(rest, index + 1, fun.(head, index, acc), fun)
+  end
 end
