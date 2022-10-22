@@ -54,7 +54,7 @@ defmodule Day04 do
     #   - we'll use this to calculate the final value to be returned
     #     (the sum of values that were not marked yet on the winning board)
 
-    # There is a third map that we will use to create the solution:
+    # There is also a third map that we will use to create the solution:
     # {board, row_or_col, :row / :col} -> count
     #   - it will track count of guessed values per row / column;
     #     if this count reaches 5 for any row or column, we have the winner!
@@ -109,6 +109,10 @@ defmodule Day04 do
     acc
   end
 
+  @spec handle_guess_at_coords(
+    {integer(), integer(), integer()},
+    {map(), map(), map(), integer(), nil | integer()})
+    :: {map(), map(), map(), integer(), nil | integer()}
   defp handle_guess_at_coords(
     {board_id, row_id, col_id},
     {coords_tracker, sums_tracker, rowcol_tracker, guess, nil}) do
