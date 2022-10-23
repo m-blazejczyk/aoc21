@@ -35,4 +35,9 @@ defmodule Tools do
   defp reduce_index_impl([head | rest], index, acc, fun) do
     reduce_index_impl(rest, index + 1, fun.(head, index, acc), fun)
   end
+
+  @spec partial_2args(fun(), [any()]) :: fun()
+  def partial_2args(f, initial_args) do
+    fn arg1, arg2 -> apply(f, initial_args ++ [arg1, arg2]) end
+  end
 end

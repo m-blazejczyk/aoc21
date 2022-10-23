@@ -61,7 +61,7 @@ defmodule Day04 do
 
     {random_numbers, boards} = get_data(test_data)
 
-    {initial_coords_tracker, initial_sums_tracker} = boards
+    {coords_map, initial_sums_tracker} = boards
     |> Tools.reduce_index(
       {%{}, %{}},
       fn board, board_id, acc -> board |> Tools.reduce_index(acc,
@@ -69,16 +69,19 @@ defmodule Day04 do
           fn value, col_id, acc -> build_part1_trackers(board_id, row_id, col_id, value, acc) end) end) end
     )
 
-    {_, _, _, final_score} = random_numbers
-    |> Enum.reduce({initial_coords_tracker, initial_sums_tracker, %{}, nil}, &part1_reducer/2)
+    reducer = Tools.partial_2args(&part1_reducer/3, [coords_map])
+    IO.inspect(reducer)
+
+    {_, _, final_score} = random_numbers
+    |> Enum.reduce({initial_sums_tracker, %{}, nil}, reducer)
 
     final_score
   end
 
   @spec build_part1_trackers(integer(), integer(), integer(), integer(), {map(), map()})
     :: {map(), map()}
-  defp build_part1_trackers(board_id, row_id, col_id, value, {coords_tracker, sums_tracker}) do
-    {_, new_coords_tracker} = coords_tracker
+  defp build_part1_trackers(board_id, row_id, col_id, value, {coords_map, sums_tracker}) do
+    {_, new_coords_map} = coords_map
     |> Map.get_and_update(value, fn
       nil -> {nil, [{board_id, row_id, col_id}]}
       list -> {list, [{board_id, row_id, col_id} | list]}
@@ -90,32 +93,34 @@ defmodule Day04 do
       old_sum -> {old_sum, old_sum + value}
     end)
 
-    {new_coords_tracker, new_sums_tracker}
+    {new_coords_map, new_sums_tracker}
   end
 
-  @spec part1_reducer(integer(), {map(), map(), map(), integer()})
-    :: {map(), map(), map(), integer()}
-  defp part1_reducer(guess, {coords_tracker, sums_tracker, rowcol_tracker, nil}) do
+  @spec part1_reducer(map(), integer(), {map(), map(), integer()})
+    :: {map(), map(), integer()}
+  defp part1_reducer(coords_map, guess, {sums_tracker, rowcol_tracker, nil}) do
 
-    {final_coords_tracker, final_sums_tracker, final_rowcol_tracker, _, final_score} = coords_tracker
+    handle_guess = Tools.partial_2args(&handle_guess_at_coords/3, [guess])
+
+    coords_map
     |> Map.get(guess)  # This returns a list of coordinates
-    |> Enum.reduce({coords_tracker, sums_tracker, rowcol_tracker, guess, nil}, &handle_guess_at_coords/2)
-
-    {final_coords_tracker, final_sums_tracker, final_rowcol_tracker, final_score}
+    |> Enum.reduce({sums_tracker, rowcol_tracker, nil}, handle_guess)
   end
   # This function clause will be invoked whenever the clause above has found
   # a full row or column and the last element of the accumulator tuple has been set.
-  defp part1_reducer(_guess, acc) do
+  defp part1_reducer(_coords_map, _guess, acc) do
     acc
   end
 
   @spec handle_guess_at_coords(
+    integer(),
     {integer(), integer(), integer()},
-    {map(), map(), map(), integer(), nil | integer()})
-    :: {map(), map(), map(), integer(), nil | integer()}
+    {map(), map(), nil | integer()})
+    :: {map(), map(), nil | integer()}
   defp handle_guess_at_coords(
+    guess,
     {board_id, row_id, col_id},
-    {coords_tracker, sums_tracker, rowcol_tracker, guess, nil}) do
+    {sums_tracker, rowcol_tracker, nil}) do
 
     # First, update the sums for the board; remove (subtract) the current guess
     # so that the sum reflects all the values that haven't been guessed yet
@@ -132,10 +137,8 @@ defmodule Day04 do
     if new_row_count == 5 do
       # If the entire row has been guessed, add the board id in the last position
       # of the accumulator tuple to stop further calculations
-      {coords_tracker,
-       new_sums_tracker,
+      {new_sums_tracker,
        new_rowcol_tracker,
-       guess,
        (new_sums_tracker |> Map.get(board_id)) * guess}
     else
       # Finally, mark the fact that there was one (or one more) guessed value in this column
@@ -146,19 +149,17 @@ defmodule Day04 do
       end)
 
       if new_col_count == 5 do
-        {coords_tracker,
-         new_sums_tracker,
+        {new_sums_tracker,
          new_rowcol_tracker,
-         guess,
          (new_sums_tracker |> Map.get(board_id)) * guess}
        else
-        {coords_tracker, new_sums_tracker, newer_rowcol_tracker, guess, nil}
+        {new_sums_tracker, newer_rowcol_tracker, nil}
       end
     end
   end
   # This function clause will be invoked whenever the clause above has found
   # a full row or column.
-  defp handle_guess_at_coords(_coords, acc) do
+  defp handle_guess_at_coords(_guess, _coords, acc) do
     acc
   end
 
