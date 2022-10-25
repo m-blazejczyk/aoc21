@@ -45,8 +45,8 @@ defmodule Day04 do
     {random_numbers, boards}
   end
 
-  @spec part1(boolean()) :: number()
-  def part1(test_data) do
+  @spec solution(boolean()) :: [number()]
+  def solution(test_data) do
     # On initialization, we create two maps like this:
     # value -> [{board, row, col}]
     #   - we'll use this to look up coordinates of values on boards
@@ -66,21 +66,28 @@ defmodule Day04 do
       {%{}, %{}},
       fn board, board_id, acc -> board |> Tools.reduce_index(acc,
         fn row, row_id, acc -> row |> Tools.reduce_index(acc,
-          fn value, col_id, acc -> build_part1_trackers(board_id, row_id, col_id, value, acc) end) end) end
+          fn value, col_id, acc -> build_trackers(board_id, row_id, col_id, value, acc) end) end) end
     )
 
-    reducer = Tools.partial_2args(&part1_reducer/3, [coords_map])
-    IO.inspect(reducer)
+    reducer = Tools.partial_2args(&reducer/3, [coords_map])
 
-    {_, _, final_score} = random_numbers
-    |> Enum.reduce({initial_sums_tracker, %{}, nil}, reducer)
+    # The accumulator consists of:
+    # - The sums tracker (the sum of unguessed values per board)
+    # - The "rowcol" tracker for keeping info on how many correct guesses we have,
+    #   per row or column
+    # - The output tuple which consists of two data structures:
+    #   - A list of the final scores for all boards, ordered by when they were completed
+    #     (it's just a list of integers)
+    #   - A map of board ids that have been completed (for faster lookups)
+    {_, _, {final_scores, _}} = random_numbers
+    |> Enum.reduce({initial_sums_tracker, %{}, {[], %MapSet{}}}, reducer)
 
-    final_score
+    final_scores
   end
 
-  @spec build_part1_trackers(integer(), integer(), integer(), integer(), {map(), map()})
+  @spec build_trackers(integer(), integer(), integer(), integer(), {map(), map()})
     :: {map(), map()}
-  defp build_part1_trackers(board_id, row_id, col_id, value, {coords_map, sums_tracker}) do
+  defp build_trackers(board_id, row_id, col_id, value, {coords_map, sums_tracker}) do
     {_, new_coords_map} = coords_map
     |> Map.get_and_update(value, fn
       nil -> {nil, [{board_id, row_id, col_id}]}
@@ -96,76 +103,85 @@ defmodule Day04 do
     {new_coords_map, new_sums_tracker}
   end
 
-  @spec part1_reducer(map(), integer(), {map(), map(), integer()})
-    :: {map(), map(), integer()}
-  defp part1_reducer(coords_map, guess, {sums_tracker, rowcol_tracker, nil}) do
+  @spec reducer(map(), integer(), {map(), map(), {[integer()], MapSet.t()}})
+    :: {map(), map(), {[integer()], MapSet.t()}}
+  defp reducer(
+    coords_map,
+    guess,
+    {_, _, {_, completed_boards}} = acc) do
 
     handle_guess = Tools.partial_2args(&handle_guess_at_coords/3, [guess])
 
     coords_map
-    |> Map.get(guess)  # This returns a list of coordinates
-    |> Enum.reduce({sums_tracker, rowcol_tracker, nil}, handle_guess)
-  end
-  # This function clause will be invoked whenever the clause above has found
-  # a full row or column and the last element of the accumulator tuple has been set.
-  defp part1_reducer(_coords_map, _guess, acc) do
-    acc
+    # This returns a list of coordinates where this guess can be found
+    |> Map.get(guess)
+    # This filters out boards that have already been completed
+    |> Enum.filter(fn {board_id, _, _} -> ! (completed_boards |> MapSet.member?(board_id)) end)
+    |> Enum.reduce(acc, handle_guess)
   end
 
   @spec handle_guess_at_coords(
     integer(),
     {integer(), integer(), integer()},
-    {map(), map(), nil | integer()})
-    :: {map(), map(), nil | integer()}
+    {map(), map(), {[integer()], MapSet.t()}})
+    :: {map(), map(), {[integer()], MapSet.t()}}
   defp handle_guess_at_coords(
     guess,
     {board_id, row_id, col_id},
-    {sums_tracker, rowcol_tracker, nil}) do
+    {sums_tracker, rowcol_tracker, {final_scores, completed_boards}}) do
 
     # First, update the sums for the board; remove (subtract) the current guess
     # so that the sum reflects all the values that haven't been guessed yet
     new_sums_tracker = sums_tracker
     |> Map.update!(board_id, fn old_sum -> old_sum - guess end)
 
-    # Then, mark the fact that there was one (or one more) guessed value in this row
+    # Then, mark the fact that there was one (or one more) guessed value
+    # in this row and column
     {new_row_count, new_rowcol_tracker} = rowcol_tracker
     |> Map.get_and_update({board_id, row_id, :row}, fn
       nil -> {1, 1}
       old_count -> {old_count + 1, old_count + 1}
     end)
+    {new_col_count, newer_rowcol_tracker} = new_rowcol_tracker
+    |> Map.get_and_update({board_id, col_id, :col}, fn
+      nil -> {1, 1}
+      old_count -> {old_count + 1, old_count + 1}
+    end)
 
-    if new_row_count == 5 do
-      # If the entire row has been guessed, add the board id in the last position
-      # of the accumulator tuple to stop further calculations
+    if new_row_count == 5 || new_col_count == 5 do
+      # If an entire row or column has been guessed, mark the board as completed etc.
       {new_sums_tracker,
        new_rowcol_tracker,
-       (new_sums_tracker |> Map.get(board_id)) * guess}
+       mark_board_completed(
+        board_id,
+        (new_sums_tracker |> Map.get(board_id)) * guess,
+        {final_scores, completed_boards})}
     else
-      # Finally, mark the fact that there was one (or one more) guessed value in this column
-      {new_col_count, newer_rowcol_tracker} = new_rowcol_tracker
-      |> Map.get_and_update({board_id, col_id, :col}, fn
-        nil -> {1, 1}
-        old_count -> {old_count + 1, old_count + 1}
-      end)
-
-      if new_col_count == 5 do
-        {new_sums_tracker,
-         new_rowcol_tracker,
-         (new_sums_tracker |> Map.get(board_id)) * guess}
-       else
-        {new_sums_tracker, newer_rowcol_tracker, nil}
-      end
+      {new_sums_tracker, newer_rowcol_tracker, {final_scores, completed_boards}}
     end
   end
-  # This function clause will be invoked whenever the clause above has found
-  # a full row or column.
-  defp handle_guess_at_coords(_guess, _coords, acc) do
-    acc
+
+  @spec mark_board_completed(integer(), integer(), {[integer()], MapSet.t()})
+    :: {[integer()], MapSet.t()}
+  defp mark_board_completed(board_id, score, {final_scores, completed_boards}) do
+    {
+      [score | final_scores],
+      completed_boards |> MapSet.put(board_id)
+    }
+  end
+
+  @spec part1(boolean()) :: number()
+  def part1(test_data) do
+    test_data
+    |> solution()
+    |> Enum.reverse()
+    |> hd()
   end
 
   @spec part2(boolean()) :: number()
-  def part2(_test_data) do
-    # get_data(test_data)
-    0
+  def part2(test_data) do
+    test_data
+    |> solution()
+    |> hd()
   end
 end
