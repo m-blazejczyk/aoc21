@@ -35,18 +35,24 @@ defmodule Day05 do
 
   @spec part1(boolean()) :: number()
   def part1(test_data) do
-    data = get_data(test_data)
-    |> Enum.filter(&is_good_for_part1/1)
-
-    IO.inspect(data)
-
-    0
+    get_data(test_data)
+    |> Enum.reduce(%{}, &part1_reducer/2)
+    |> Map.values()
+    |> Enum.count(fn c -> c > 1 end)
   end
 
-  @spec is_good_for_part1({{integer(), integer()}, {integer(), integer()}}) :: boolean()
-  defp is_good_for_part1({{_x1, y}, {_x2, y}}), do: true
-  defp is_good_for_part1({{x, _y1}, {x, _y2}}), do: true
-  defp is_good_for_part1({{_x1, _y1}, {_x2, _y2}}), do: false
+  @spec part1_reducer({{integer(), integer()}, {integer(), integer()}}, map()) :: map()
+  defp part1_reducer({{x1, y}, {x2, y}}, acc) do
+    x1..x2
+    |> Enum.reduce(acc, fn x, acc -> acc |> Map.update({x, y}, 1, fn val -> val + 1 end) end)
+  end
+  defp part1_reducer({{x, y1}, {x, y2}}, acc) do
+    y1..y2
+    |> Enum.reduce(acc, fn y, acc -> acc |> Map.update({x, y}, 1, fn val -> val + 1 end) end)
+  end
+  defp part1_reducer(_, acc) do
+    acc
+  end
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
