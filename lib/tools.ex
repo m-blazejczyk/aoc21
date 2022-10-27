@@ -10,6 +10,11 @@ defmodule Tools do
     data
   end
 
+  @spec sign(number()) :: -1 | 0 | 1
+  def sign(x) when x > 0, do: 1
+  def sign(x) when x == 0, do: 0
+  def sign(x) when x < 0, do: -1
+
   @spec map2([any()], [any()], function()) :: [any()]
   def map2(list1, list2, fun) do
     reduce2(list1, list2, [], fun) |> Enum.reverse()

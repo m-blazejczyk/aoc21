@@ -41,6 +41,8 @@ defmodule Day05 do
     |> Enum.count(fn c -> c > 1 end)
   end
 
+  # The accumulator is a map from coordinates {x, y} to the integer value
+  # representing how many times the point at these coords was crossed by a vent
   @spec part1_reducer({{integer(), integer()}, {integer(), integer()}}, map()) :: map()
   defp part1_reducer({{x1, y}, {x2, y}}, acc) do
     x1..x2
@@ -57,6 +59,32 @@ defmodule Day05 do
   @spec part2(boolean()) :: number()
   def part2(test_data) do
     get_data(test_data)
-    0
+    |> Enum.reduce(%{}, &part2_reducer/2)
+    |> Map.values()
+    |> Enum.count(fn c -> c > 1 end)
+  end
+
+  # This reducer is almost identical to the part1 one but it also handles diagonals
+  @spec part2_reducer({{integer(), integer()}, {integer(), integer()}}, map()) :: map()
+  defp part2_reducer({{x1, y1}, {x2, y2}} = line, acc) do
+    if x1 != x2 && y1 != y2 && abs(y2 - y1) == abs(x2 - x1) do
+      walk_diagonal({x1, y1}, {x2, y2}, {Tools.sign(x2 - x1), Tools.sign(y2 - y1)}, acc)
+    else
+      part1_reducer(line, acc)
+    end
+  end
+
+  # A recursive implementation to handle diagonals
+  @spec walk_diagonal(
+    {integer(), integer()}, {integer(), integer()}, {integer(), integer()}, map())
+    :: map()
+  defp walk_diagonal({cur_x, cur_y}, {last_x, last_y} = last, {dx, dy} = delta, acc) do
+    if cur_x + dx != last_x && cur_y + dy != last_y do
+      walk_diagonal(
+        {cur_x + dx, cur_y + dy}, last, delta,
+        acc |> Map.update({cur_x, cur_y}, 1, fn val -> val + 1 end))
+    else
+      acc |> Map.update({cur_x, cur_y}, 1, fn val -> val + 1 end)
+    end
   end
 end
