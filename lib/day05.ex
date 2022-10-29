@@ -60,9 +60,27 @@ defmodule Day05 do
   def part2(test_data) do
     get_data(test_data)
     |> Enum.reduce(%{}, &part2_reducer/2)
+    # |> visualize_grid()
     |> Map.values()
     |> Enum.count(fn c -> c > 1 end)
   end
+
+  defp visualize_grid(coords) do
+    IO.inspect(coords |> map_size(), label: "Coords found")
+
+    for y <- 0..9 do
+      IO.puts 0..9
+      |> Enum.reduce([], fn x, acc -> [coords |> Map.get({x, y}, '.') |> convert() | acc] end)
+      |> Enum.reverse()
+    end
+
+    coords
+  end
+
+  defp convert(1), do: '1'
+  defp convert(2), do: '2'
+  defp convert(3), do: '3'
+  defp convert(a), do: a
 
   # This reducer is almost identical to the part1 one but it also handles diagonals
   @spec part2_reducer({{integer(), integer()}, {integer(), integer()}}, map()) :: map()
@@ -79,7 +97,7 @@ defmodule Day05 do
     {integer(), integer()}, {integer(), integer()}, {integer(), integer()}, map())
     :: map()
   defp walk_diagonal({cur_x, cur_y}, {last_x, last_y} = last, {dx, dy} = delta, acc) do
-    if cur_x + dx != last_x && cur_y + dy != last_y do
+    if (cur_x != last_x) && (cur_y != last_y) do
       walk_diagonal(
         {cur_x + dx, cur_y + dy}, last, delta,
         acc |> Map.update({cur_x, cur_y}, 1, fn val -> val + 1 end))
