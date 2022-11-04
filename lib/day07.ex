@@ -63,6 +63,8 @@ defmodule Day07 do
     }
   end
 
+  @spec part1_reducer(%{integer() => integer()}, integer(), integer(), {[integer()], integer()})
+    :: {[integer()], integer()}
   defp part1_reducer(pos_map, crab_count, pos, {[prev_fuel | _rest] = fuel_list, crabs_to_the_right}) do
     fuel = prev_fuel - crabs_to_the_right + (crab_count - crabs_to_the_right)
     crab_count_here = pos_map |> Map.get(pos, nil)
@@ -77,7 +79,24 @@ defmodule Day07 do
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
-    get_data(test_data)
-    0
+    data = get_data(test_data)
+
+    max_pos = data |> Enum.max()
+
+    # For part 2, a more of a "brute force" solution is needed.
+    # We have to go over all allowed positions (the lowest crab coordinate is 0)
+    # and then, for each crab, we calculate the fuel required for this crab to reach
+    # this position. It's all dont with simple math - no need to keep any state between
+    # iterations.
+    0..max_pos
+    |> Enum.map(fn pos ->
+      data |> Enum.reduce(0, fn crab_pos, total_fuel ->
+        total_fuel + sum_between(0, abs(crab_pos - pos))
+      end)
+    end)
+    |> Enum.min()
   end
+
+  @spec sum_between(integer(), integer()) :: integer()
+  defp sum_between(a, b), do: div((a + b) * (b - a + 1), 2)
 end
