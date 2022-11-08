@@ -16,23 +16,13 @@ defmodule Day09 do
   @spec get_data(boolean()) :: map()
   def get_data(test_data) do
     get_raw_data(test_data)
-    |> rows_to_coords(0, Map.new())
-    |> Enum.reduce(Map.new(), &cols_to_coords/2)
-  end
-
-  @spec rows_to_coords([String.t()], integer(), map()) :: map()
-  defp rows_to_coords([], _index, acc) do
-    acc
-  end
-  defp rows_to_coords([first | rest], index, acc) do
-    rows_to_coords(rest, index + 1, Map.put(acc, index, first))
-  end
-
-  @spec cols_to_coords({integer(), String.t()}, map()) :: map()
-  defp cols_to_coords({row_index, row_str}, acc) do
-    row_str
-    |> String.to_charlist()
-    |> Tools.reduce_index(acc, fn val, col_index, acc -> acc |> Map.put({row_index, col_index}, val - 48) end)
+    |> Tools.reduce_index(Map.new(), fn row_str, row_index, acc ->
+      row_str
+      |> String.to_charlist()
+      |> Tools.reduce_index(acc, fn val, col_index, acc ->
+        acc |> Map.put({row_index, col_index}, val - 48)
+      end)
+    end)
   end
 
   @spec part1(boolean()) :: number()
