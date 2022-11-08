@@ -20,6 +20,7 @@ defmodule Day09 do
     |> Enum.reduce(Map.new(), &cols_to_coords/2)
   end
 
+  @spec rows_to_coords([String.t()], integer(), map()) :: map()
   defp rows_to_coords([], _index, acc) do
     acc
   end
@@ -27,6 +28,7 @@ defmodule Day09 do
     rows_to_coords(rest, index + 1, Map.put(acc, index, first))
   end
 
+  @spec cols_to_coords({integer(), String.t()}, map()) :: map()
   defp cols_to_coords({row_index, row_str}, acc) do
     row_str
     |> String.to_charlist()
@@ -36,7 +38,7 @@ defmodule Day09 do
   @spec part1(boolean()) :: number()
   def part1(test_data) do
     get_data(test_data)
-    0
+    |> map_size()
   end
 
   @spec part2(boolean()) :: number()
