@@ -42,14 +42,19 @@ defmodule Day09 do
   defp find_low_points(_coords_map, {_coord, depth}, acc) when depth == 9, do: acc
   defp find_low_points(coords_map, {{row, col}, depth}, acc) do
     # We don't have to worry about the edges of the area (because Map.get() includes a default!)
-    if Map.get(coords_map, {row - 1, col}, 9) > depth
+    if is_low_point(coords_map, row, col, depth) do
+      [depth | acc]
+    else
+      acc
+    end
+  end
+
+  @spec is_low_point(map(), integer(), integer(), integer()) :: boolean()
+  defp is_low_point(coords_map, row, col, depth) do
+    Map.get(coords_map, {row - 1, col}, 9) > depth
       && Map.get(coords_map, {row + 1, col}, 9) > depth
       && Map.get(coords_map, {row, col - 1}, 9) > depth
-      && Map.get(coords_map, {row, col + 1}, 9) > depth do
-        [depth | acc]
-      else
-        acc
-      end
+      && Map.get(coords_map, {row, col + 1}, 9) > depth
   end
 
   @spec part2(boolean()) :: number()
