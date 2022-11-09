@@ -27,8 +27,29 @@ defmodule Day09 do
 
   @spec part1(boolean()) :: number()
   def part1(test_data) do
-    get_data(test_data)
-    |> map_size()
+    coords_map = get_data(test_data)
+
+    find_low_points_partial = Tools.partial_2args(&find_low_points/3, [coords_map])
+
+    low_points = get_data(test_data)
+    |> Enum.reduce([], find_low_points_partial)
+
+    (low_points |> Enum.sum()) + length(low_points)
+  end
+
+  @spec find_low_points(map(), {{integer(), integer()}, integer()}, [integer()]) :: [integer()]
+  # Skip points at depth 9 - those are certainly not lower than the surrounding area
+  defp find_low_points(_coords_map, {_coord, depth}, acc) when depth == 9, do: acc
+  defp find_low_points(coords_map, {{row, col}, depth}, acc) do
+    # We don't have to worry about the edges of the area (because Map.get() includes a default!)
+    if Map.get(coords_map, {row - 1, col}, 9) > depth
+      && Map.get(coords_map, {row + 1, col}, 9) > depth
+      && Map.get(coords_map, {row, col - 1}, 9) > depth
+      && Map.get(coords_map, {row, col + 1}, 9) > depth do
+        [depth | acc]
+      else
+        acc
+      end
   end
 
   @spec part2(boolean()) :: number()
