@@ -60,7 +60,6 @@ defmodule Day10 do
     |> Enum.filter(&Kernel.is_list/1)
     |> Enum.map(fn stack ->
       stack
-      |> Enum.map(&bracket_complement/1)
       |> Enum.reduce(0, fn bracket, acc -> acc * 5 + autocomplete_score(bracket) end)
     end)
     |> Enum.sort()
@@ -70,15 +69,9 @@ defmodule Day10 do
     |> hd()
   end
 
-  @spec bracket_complement(char()) :: char()
-  defp bracket_complement(?(), do: ?)
-  defp bracket_complement(?[), do: ?]
-  defp bracket_complement(?<), do: ?>
-  defp bracket_complement(?{), do: ?}
-
   @spec autocomplete_score(char()) :: non_neg_integer()
-  defp autocomplete_score(?)), do: 1
-  defp autocomplete_score(?]), do: 2
-  defp autocomplete_score(?>), do: 4
-  defp autocomplete_score(?}), do: 3
+  defp autocomplete_score(?(), do: 1
+  defp autocomplete_score(?[), do: 2
+  defp autocomplete_score(?<), do: 4
+  defp autocomplete_score(?{), do: 3
 end
