@@ -55,7 +55,30 @@ defmodule Day10 do
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
-    get_data(test_data)
-    0
+    sorted_scores = get_data(test_data)
+    |> Enum.map(fn line -> line |> Enum.reduce([], &handle_char/2) end)
+    |> Enum.filter(&Kernel.is_list/1)
+    |> Enum.map(fn stack ->
+      stack
+      |> Enum.map(&bracket_complement/1)
+      |> Enum.reduce(0, fn bracket, acc -> acc * 5 + autocomplete_score(bracket) end)
+    end)
+    |> Enum.sort()
+
+    sorted_scores
+    |> Enum.drop(div(length(sorted_scores), 2))
+    |> hd()
   end
+
+  @spec bracket_complement(char()) :: char()
+  defp bracket_complement(?(), do: ?)
+  defp bracket_complement(?[), do: ?]
+  defp bracket_complement(?<), do: ?>
+  defp bracket_complement(?{), do: ?}
+
+  @spec autocomplete_score(char()) :: non_neg_integer()
+  defp autocomplete_score(?)), do: 1
+  defp autocomplete_score(?]), do: 2
+  defp autocomplete_score(?>), do: 4
+  defp autocomplete_score(?}), do: 3
 end
