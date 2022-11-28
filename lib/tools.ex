@@ -45,4 +45,16 @@ defmodule Tools do
   def partial_2args(f, initial_args) do
     fn arg1, arg2 -> apply(f, initial_args ++ [arg1, arg2]) end
   end
+
+  @spec digit_grid_to_coords_map([String.t()]) :: %{{integer(), integer()} => integer()}
+  def digit_grid_to_coords_map(grid) do
+    grid
+    |> reduce_index(%{}, fn row_str, row_index, acc ->
+      row_str
+      |> String.to_charlist()
+      |> reduce_index(acc, fn val, col_index, acc ->
+        acc |> Map.put({row_index, col_index}, val - 48)
+      end)
+    end)
+  end
 end

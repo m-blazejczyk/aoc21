@@ -16,13 +16,7 @@ defmodule Day09 do
   @spec get_data(boolean()) :: map()
   def get_data(test_data) do
     get_raw_data(test_data)
-    |> Tools.reduce_index(Map.new(), fn row_str, row_index, acc ->
-      row_str
-      |> String.to_charlist()
-      |> Tools.reduce_index(acc, fn val, col_index, acc ->
-        acc |> Map.put({row_index, col_index}, val - 48)
-      end)
-    end)
+    |> Tools.digit_grid_to_coords_map()
   end
 
   @spec part1(boolean()) :: number()
