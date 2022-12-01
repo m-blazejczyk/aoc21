@@ -39,13 +39,13 @@ defmodule Day11 do
     grid = get_data(test_data)
 
     {_grid, flash_count} = 1..100
-    |> Enum.reduce({grid, 0}, &step/2)
+    |> Enum.reduce({grid, 0}, &step_part1/2)
 
     flash_count
   end
 
-  @spec step(integer(), {grid_t(), integer()}) :: {grid_t(), integer()}
-  defp step(_, {grid, flash_count}) do
+  @spec step_part1(integer(), {grid_t(), integer()}) :: {grid_t(), integer()}
+  defp step_part1(_, {grid, flash_count}) do
     # First, increase the energy of each octopus by 1
     new_grid_list = grid
     |> Enum.map(fn {pos, energy} -> {pos, energy + 1} end)
@@ -108,7 +108,31 @@ defmodule Day11 do
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
-    get_data(test_data)
-    0
+    grid = get_data(test_data)
+
+    # For part 2, we don't reduce; we use the equivalent of a "while" loop
+    {_grid, _flash_count, sync_flash} = step_part2(1, {grid, 0, nil})
+
+    sync_flash
+  end
+
+  @spec step_part2(integer(), {grid_t(), integer(), integer() | nil}) :: {grid_t(), integer(), integer() | nil}
+  defp step_part2(step, {grid, flash_count, nil}) do
+    # First, increase the energy of each octopus by 1
+    new_grid_list = grid
+    |> Enum.map(fn {pos, energy} -> {pos, energy + 1} end)
+
+    # Then, flash!
+    {new_grid, new_flash_count} = new_grid_list
+    |> flash_grid_helper({new_grid_list |> Enum.into(%{}), flash_count})
+
+    all_flashed? = new_flash_count - flash_count == map_size(new_grid)
+
+    step_part2(step + 1, {new_grid, new_flash_count, if(all_flashed?, do: step, else: nil)})
+  end
+  # If we have a non-nil "sync flash", it means that all octopuses flashed at once,
+  # and we end the recursive call
+  defp step_part2(_step, acc) do
+    acc
   end
 end
