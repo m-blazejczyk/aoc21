@@ -52,29 +52,30 @@ defmodule Day12 do
   @spec part1(boolean()) :: number()
   def part1(test_data) do
     {_, all_paths} = get_data(test_data)
-    |> walk_caves({"start", true}, {[], []})
+    |> walk_caves_part1({"start", true}, {[], []})
 
     # IO.inspect(all_paths |> Enum.map(&Enum.reverse/1))
 
     length(all_paths)
   end
 
-  defp walk_caves(_all_caves, {cave = "end", _is_small}, {path, all_paths}) do
+  defp walk_caves_part1(_all_caves, {cave = "end", _is_small}, {path, all_paths}) do
     path_to_add = [cave | path]
     {path, [path_to_add | all_paths]}
   end
-  defp walk_caves(all_caves, {cave, is_small}, {path, all_paths} = acc) do
+  defp walk_caves_part1(all_caves, {cave, is_small}, {path, all_paths} = acc) do
+    # Check if we already visited this cave
     if is_small && path |> Enum.member?(cave) do
       acc
     else
-      walk_caves_partial = Tools.partial_2args(&walk_caves/3, [all_caves])
+      walk_caves_partial = Tools.partial_2args(&walk_caves_part1/3, [all_caves])
 
       {_new_path, new_all_paths} = all_caves
       |> Map.get(cave)
       |> Enum.reduce({[cave | path], all_paths}, walk_caves_partial)
 
       # ALWAYS return the old path. Otherwise, the new path returned above may contain
-      # a lot of additional caves that have been explored but rejected as valid paths.
+      # a lot of additional caves that have been explored but rejected as invalid paths.
       # Returning the old path here "resets" the path as far as the caller is concerned.
       {path, new_all_paths}
     end
@@ -82,29 +83,48 @@ defmodule Day12 do
 
   @spec part2(boolean()) :: number()
   def part2(test_data) do
-    get_data(test_data)
-    0
+    {_, _, all_paths} = get_data(test_data)
+    |> walk_caves_part2({"start", true}, {[], %{}, []})
+
+    # IO.inspect(all_paths |> Enum.map(&Enum.reverse/1))
+
+    length(all_paths)
+  end
+
+  defp walk_caves_part2(_all_caves, {cave = "end", _is_small}, {path, cave_tracker, all_paths}) do
+    path_to_add = [cave | path]
+    {path, cave_tracker, [path_to_add | all_paths]}
+  end
+  defp walk_caves_part2(all_caves, {cave, is_small}, {path, cave_tracker, all_paths} = acc) do
+    # Check if we already visited this cave; in part 2, this is a bit more involved
+    # because ONE of the small caves can be visited twice
+    if is_small && not can_be_entered(cave, cave_tracker) do
+      acc
+    else
+      walk_caves_partial = Tools.partial_2args(&walk_caves_part2/3, [all_caves])
+
+      {_new_path, _new_cave_tracker, new_all_paths} = all_caves
+      |> Map.get(cave)
+      |> Enum.reduce(
+        {[cave | path],
+          (if is_small, do: cave_tracker |> Map.update(cave, 1, fn v -> v + 1 end), else: cave_tracker),
+          all_paths},
+        walk_caves_partial)
+
+      # ALWAYS return the old path (and cave set). Otherwise, the new path returned above
+      # may contain a lot of additional caves that have been explored but rejected as invalid
+      # paths. Returning the old path here "resets" the path as far as the caller is concerned.
+      {path, cave_tracker, new_all_paths}
+    end
+  end
+
+  @spec can_be_entered(String.t(), %{String.t() => integer()}) :: boolean()
+  defp can_be_entered(cave, cave_tracker) do
+    # Here, we are checking how many times each cave WOULD be visited IF we visited this one
+    vals = cave_tracker
+    |> Map.update(cave, 1, fn v -> v + 1 end)
+    |> Map.values()
+
+    (vals |> Enum.all?(fn v -> v <= 1 end)) or (vals |> Enum.count(fn v -> v == 2 end) == 1)
   end
 end
-
-
-# start
-# start -> b
-# start -> b -> end       # +++
-# start -> b -> d
-# start -> b -> d -> b    # ---
-# start -> b -> A
-# start -> b -> A -> end  # +++
-# start -> b -> A -> b    # ---
-# start -> b -> A -> c
-
-# Made it to cave 'start'; path: []
-# ...caves to visit: [{"b", true}, {"A", false}]
-# Made it to cave 'b'; path: ["start"]
-# ...caves to visit: [{"end", true}, {"d", true}, {"A", false}]
-# 'end' reached; path: ["b", "start"]
-# Made it to cave 'd'; path: ["b", "start"]
-# ...caves to visit: [{"b", true}]
-# Tried visiting small cave 'b' again; path: ["d", "b", "start"]
-# Made it to cave 'A'; path: ["d", "b", "start"]
-# ...caves to visit: [{"end", true}, {"b", true}, {"c", true}]
