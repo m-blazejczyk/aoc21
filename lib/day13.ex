@@ -29,32 +29,30 @@ defmodule Day13 do
     Tools.read_file("day13.txt")
   end
 
-  @spec get_data(boolean()) :: [String.t()]
+  @spec get_data(boolean()) :: {integer(), integer(), [{integer(), integer()}]}
   def get_data(test_data) do
-    get_raw_data(test_data)
-    |> Enum.reduce({%{}, nil, nil}, &parse_row/2)
+    [fold_x_str|[fold_y_str|[_empty|dots]]] = get_raw_data(test_data)
+    |> Enum.reverse()
+
+    {fold_x_str |> String.replace("fold along x=", "") |> String.to_integer(),
+      fold_y_str |> String.replace("fold along y=", "") |> String.to_integer(),
+      dots |> Enum.map(&parse_position/1)}
   end
 
-  @spec parse_row(String.t(), {%{{integer(), integer()} => boolean()}, integer(), integer()})
-    :: {%{{integer(), integer()} => boolean()}, integer(), integer()}
-  defp parse_row(row, {dots, fold_y, fold_x} = acc) do
-    cond do
-      row |> String.starts_with?("fold along y=") ->
-        {dots, row |> String.replace("fold along y=", "") |> String.to_integer(), fold_x}
-      row |> String.starts_with?("fold along x=") ->
-        {dots, fold_y, row |> String.replace("fold along x=", "") |> String.to_integer()}
-      row |> String.contains?(",") ->
-        [x, y] = row |> String.split(",")
-        {dots |> Map.put({x, y}, true), fold_y, fold_x}
-      true ->
-        acc
-    end
+  @spec parse_position(String.t()) :: {integer(), integer()}
+  defp parse_position(pos_str) do
+    [x, y] = pos_str |> String.split(",") |> Enum.map(&String.to_integer/1)
+    {x, y}
   end
 
   @spec part1(boolean()) :: number()
   def part1(test_data) do
-    IO.inspect get_data(test_data)
-    0
+    {_fold_x, fold_y, dots} = get_data(test_data)
+
+    dots
+    |> Enum.reduce(MapSet.new(), fn {x, y}, set -> set |> MapSet.put({x, abs(fold_y - y)}) end)
+    |> IO.inspect()
+    |> MapSet.size()
   end
 
   @spec part2(boolean()) :: number()
