@@ -29,30 +29,50 @@ defmodule Day13 do
     Tools.read_file("day13.txt")
   end
 
-  @spec get_data(boolean()) :: {integer(), integer(), [{integer(), integer()}]}
+  @spec get_data(boolean()) :: {MapSet.t(), [{:fold_x | :fold_y, integer()}]}
   def get_data(test_data) do
-    [fold_x_str|[fold_y_str|[_empty|dots]]] = get_raw_data(test_data)
-    |> Enum.reverse()
-
-    {fold_x_str |> String.replace("fold along x=", "") |> String.to_integer(),
-      fold_y_str |> String.replace("fold along y=", "") |> String.to_integer(),
-      dots |> Enum.map(&parse_position/1)}
+    {dots, folds} = get_raw_data(test_data)
+    |> Enum.reduce({MapSet.new(), []}, &parse_row/2)
+    {dots, folds |> Enum.reverse()}
   end
 
-  @spec parse_position(String.t()) :: {integer(), integer()}
-  defp parse_position(pos_str) do
-    [x, y] = pos_str |> String.split(",") |> Enum.map(&String.to_integer/1)
-    {x, y}
+  @spec parse_row(String.t(), {MapSet.t(), [{:fold_x | :fold_y, integer()}]})
+    :: {MapSet.t(), [{:fold_x | :fold_y, integer()}]}
+  defp parse_row(row, {dots, folds} = acc) do
+    cond do
+      row |> String.starts_with?("fold along y=") ->
+        fold_coord = row |> String.replace("fold along y=", "") |> String.to_integer()
+        {dots, [{:fold_y, fold_coord} | folds]}
+      row |> String.starts_with?("fold along x=") ->
+        fold_coord = row |> String.replace("fold along x=", "") |> String.to_integer()
+        {dots, [{:fold_x, fold_coord} | folds]}
+      row |> String.contains?(",") ->
+        [x, y] = row |> String.split(",") |> Enum.map(&String.to_integer/1)
+        {dots |> MapSet.put({x, y}), folds}
+      true ->
+        acc
+    end
   end
 
   @spec part1(boolean()) :: number()
   def part1(test_data) do
-    {_fold_x, fold_y, dots} = get_data(test_data)
+    {dots, folds} = get_data(test_data)
 
-    dots
-    |> Enum.reduce(MapSet.new(), fn {x, y}, set -> set |> MapSet.put({x, abs(fold_y - y)}) end)
+    folds
+    |> hd()
+    |> fold(dots)
     |> IO.inspect()
     |> MapSet.size()
+  end
+
+  @spec fold({:fold_x | :fold_y, integer()}, MapSet.t()) :: MapSet.t()
+  defp fold({:fold_y, fold_coord}, dots) do
+    dots
+    |> Enum.reduce(MapSet.new(), fn {x, y}, set -> set |> MapSet.put({x, abs(fold_coord - y)}) end)
+  end
+  defp fold({:fold_x, fold_coord}, dots) do
+    dots
+    |> Enum.reduce(MapSet.new(), fn {x, y}, set -> set |> MapSet.put({abs(fold_coord - x), y}) end)
   end
 
   @spec part2(boolean()) :: number()
