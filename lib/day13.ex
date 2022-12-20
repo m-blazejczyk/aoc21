@@ -61,7 +61,6 @@ defmodule Day13 do
     folds
     |> hd()
     |> fold(dots)
-    |> IO.inspect()
     |> MapSet.size()
   end
 
@@ -95,9 +94,48 @@ defmodule Day13 do
   def part2(test_data) do
     {dots, folds} = get_data(test_data)
 
-    folds
+    final_coords = folds
     |> Enum.reduce(dots, &fold/2)
-    |> IO.inspect()
-    |> MapSet.size()
+
+    {max_x, max_y} = final_coords
+    |> find_maxes()
+
+    # The puzzle output are the letters that are represented by the dots on the paper;
+    # we will print out the contents of the paper
+    lines = final_coords
+    |> Enum.reduce(%{}, &reduce_for_print/2)
+
+    0..max_y
+    |> Enum.map(fn y -> row_for_print(lines |> Map.get(y, MapSet.new()), max_x) end)
+    |> Enum.each(&IO.puts/1)
+
+    0
+  end
+
+  @spec find_maxes(MapSet.t()) :: {integer(), integer()}
+  defp find_maxes(coords) do
+    {_x, max_y} = coords
+    |> Enum.max_by(fn {_x, y} -> y end)
+
+    {max_x, _y} = coords
+    |> Enum.max_by(fn {x, _y} -> x end)
+
+    {max_x, max_y}
+  end
+
+  defp reduce_for_print({x, y}, rows_map) do
+    {_, new_rows_map} = rows_map
+    |> Map.get_and_update(y, fn
+      nil -> {nil, MapSet.new([x])}
+      coords_at_y -> {coords_at_y, coords_at_y |> MapSet.put(x)}
+    end)
+    new_rows_map
+  end
+
+  @spec row_for_print(MapSet.t(), integer()) :: String.t()
+  defp row_for_print(dot_coords, max_x) do
+    0..max_x
+    |> Enum.map(fn x -> if dot_coords |> MapSet.member?(x), do: "#", else: "." end)
+    |> Enum.join("")
   end
 end
