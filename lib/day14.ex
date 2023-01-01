@@ -43,9 +43,17 @@ defmodule Day14 do
   @spec part1(boolean()) :: number()
   def part1(test_data) do
     {template, rules} = get_data(test_data)
-    to_weave = template |> apply_rules(rules, [])
-    IO.inspect Tools.interweave(template, to_weave)
+    IO.inspect build_sequence(3, template, rules)
     0
+  end
+
+  @spec build_sequence(non_neg_integer(), [String.t()], %{{String.t(), String.t()} => String.t()})
+    :: [String.t()]
+  defp build_sequence(0, template, _), do: template
+  defp build_sequence(n, template, rules) do
+    to_weave = template |> apply_rules(rules, [])
+    new_template = Tools.interweave(template, to_weave)
+    build_sequence(n - 1, new_template, rules)
   end
 
   @spec apply_rules(list(), %{{String.t(), String.t()} => String.t()}, list()) :: list()
