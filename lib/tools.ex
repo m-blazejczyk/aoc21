@@ -41,6 +41,21 @@ defmodule Tools do
     reduce_index_impl(rest, index + 1, fun.(head, index, acc), fun)
   end
 
+  @spec interweave(list(), list()) :: list()
+  def interweave(l1, l2), do: Enum.reverse(interweave_impl(l1, l2, []))
+
+  @spec interweave_impl(list(), list(), list()) :: list()
+  defp interweave_impl([], [], out), do: out
+  defp interweave_impl([], [l2_h | l2_rest], out) do
+    interweave_impl([], l2_rest, [l2_h | out])
+  end
+  defp interweave_impl([l1_h | l1_rest], [], out) do
+    interweave_impl(l1_rest, [], [l1_h | out])
+  end
+  defp interweave_impl([l1_h | l1_rest], [l2_h | l2_rest], out) do
+    interweave_impl(l1_rest, l2_rest, [l2_h | [l1_h | out]])
+  end
+
   @spec partial_2args(fun(), [any()]) :: fun()
   def partial_2args(f, initial_args) do
     fn arg1, arg2 -> apply(f, initial_args ++ [arg1, arg2]) end
