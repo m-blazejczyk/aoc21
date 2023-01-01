@@ -3,7 +3,7 @@ defmodule Day14 do
   defp get_raw_data(_test_data = true) do
     [
       "NNCB",
-      "",
+      # "",  # Empty lines are skipped by Tools.read_file()
       "CH -> B",
       "HH -> N",
       "CB -> H",
@@ -28,7 +28,7 @@ defmodule Day14 do
 
   @spec get_data(boolean()) :: {[String.t()], %{{String.t(), String.t()} => String.t()}}
   def get_data(test_data) do
-    [template | [_empty | rules_str]] = get_raw_data(test_data)
+    [template | rules_str] = get_raw_data(test_data)
 
     rules = rules_str
     |> Enum.map(fn rule ->
@@ -43,8 +43,14 @@ defmodule Day14 do
   @spec part1(boolean()) :: number()
   def part1(test_data) do
     {template, rules} = get_data(test_data)
-    IO.inspect build_sequence(3, template, rules)
-    0
+
+    final_sequence = build_sequence(10, template, rules)
+
+    {{_, min}, {_, max}} = final_sequence
+    |> Enum.frequencies()
+    |> Enum.min_max_by(fn {_v, count} -> count end)
+
+    max - min
   end
 
   @spec build_sequence(non_neg_integer(), [String.t()], %{{String.t(), String.t()} => String.t()})
