@@ -44,6 +44,8 @@ defmodule Day14 do
   def part1(test_data) do
     {template, rules} = get_data(test_data)
 
+    # This is the naive implementation that simply builds the final string.
+    # It won't work for larger values of 'n' because the strin won't fit into memory.
     final_sequence = build_sequence(10, template, rules)
 
     {{_, min}, {_, max}} = final_sequence
